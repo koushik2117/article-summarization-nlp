@@ -1,6 +1,12 @@
 # Article Summarization System (NLP)
 
+[![Live Demo on Hugging Face Spaces](https://img.shields.io/badge/🤗%20Live%20Demo-Hugging%20Face%20Spaces-blue)](https://huggingface.co/spaces/koushik2117/article-summarization-nlp)
+[![Python 3.11](https://img.shields.io/badge/Python-3.11-blue.svg)](https://www.python.org/)
+[![Transformers](https://img.shields.io/badge/🤗%20Transformers-BART--large--CNN-orange)](https://huggingface.co/facebook/bart-large-cnn)
+
 An end-to-end NLP pipeline for generating coherent summaries of long-form articles using Transformer-based models (BART / T5).
+
+> **🔗 [Try the Live Demo →](https://huggingface.co/spaces/koushik2117/article-summarization-nlp)**
 
 ## Project Structure
 
