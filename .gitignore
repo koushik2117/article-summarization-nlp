@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual env
+venv/
+env/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Data & models
+data/raw/
+data/processed/
+models/
+*.pt
+*.bin
+*.safetensors
+
+# Misc
+.env
+.DS_Store
+Thumbs.db
+*.log
