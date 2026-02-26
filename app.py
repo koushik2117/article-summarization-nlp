@@ -5,14 +5,19 @@ This file powers the live demo on Hugging Face Spaces.
 """
 
 import gradio as gr
-from transformers import pipeline
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+import torch
 
-# ── Load model (cached by HF Spaces) ────────────────────────────────────
-summarizer = pipeline(
-    "summarization",
-    model="facebook/bart-large-cnn",
-    device=-1,  # CPU — HF Spaces free tier
-)
+# ── Load model directly (avoids pipeline KeyError issues) ────────────────
+model_name = "facebook/bart-large-cnn"
+
+print(f"Loading tokenizer: {model_name}")
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+
+print(f"Loading model: {model_name}")
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+model.to(device)
 
 
 def summarize(
@@ -21,19 +26,30 @@ def summarize(
     min_length: int = 40,
     num_beams: int = 4,
 ) -> str:
-    """Generate a summary using BART-large-CNN."""
+    """Generate a summary using BART-large-CNN (Direct Loading)."""
     if not article or len(article.strip()) < 20:
         return "⚠️ Please paste a longer article (at least a few sentences)."
 
-    result = summarizer(
-        article,
-        max_length=max_length,
-        min_length=min_length,
-        num_beams=num_beams,
-        no_repeat_ngram_size=3,
-        length_penalty=2.0,
-    )
-    return result[0]["summary_text"]
+    try:
+        inputs = tokenizer(
+            article, 
+            max_length=1024, 
+            truncation=True, 
+            return_tensors="pt"
+        ).to(device)
+        
+        summary_ids = model.generate(
+            **inputs,
+            max_length=max_length,
+            min_length=min_length,
+            num_beams=num_beams,
+            no_repeat_ngram_size=3,
+            length_penalty=2.0,
+        )
+        
+        return tokenizer.decode(summary_ids[0], skip_special_tokens=True)
+    except Exception as e:
+        return f"❌ Error during summarization: {str(e)}"
 
 
 # ── Example articles ─────────────────────────────────────────────────────
@@ -44,13 +60,7 @@ examples = [
         "human intervention. In healthcare, AI-powered diagnostic tools can analyse medical "
         "images with remarkable accuracy, often matching or surpassing human radiologists. "
         "Machine learning algorithms sift through vast datasets of patient records to identify "
-        "patterns that predict disease onset, enabling earlier intervention and improved outcomes. "
-        "In the financial sector, AI drives algorithmic trading, fraud detection, and personalised "
-        "banking experiences. Natural language processing allows chatbots to handle customer "
-        "queries around the clock, reducing wait times and operational costs. Despite these "
-        "advances, significant challenges remain: data privacy concerns, algorithmic bias, and "
-        "the need for explainability in AI decision-making continue to be active areas of "
-        "research and regulation.",
+        "patterns that predict disease onset, enabling earlier intervention and improved outcomes.",
         150, 40, 4,
     ],
     [
@@ -59,21 +69,7 @@ examples = [
         "levels to rise, glaciers to melt, and extreme weather events to become more frequent "
         "and severe. The Intergovernmental Panel on Climate Change (IPCC) has warned that "
         "limiting global warming to 1.5 degrees Celsius above pre-industrial levels is critical "
-        "to avoiding the most catastrophic impacts. Transitioning to renewable energy sources "
-        "such as solar, wind, and hydroelectric power is essential, alongside improvements in "
-        "energy efficiency and carbon capture technologies.",
-        130, 30, 4,
-    ],
-    [
-        "The field of quantum computing has seen remarkable progress in recent years, with "
-        "major technology companies and research institutions racing to build practical quantum "
-        "processors. Unlike classical computers that use bits representing 0 or 1, quantum "
-        "computers use qubits that can exist in superposition, representing both states "
-        "simultaneously. This property, along with entanglement and quantum interference, "
-        "allows quantum computers to solve certain problems exponentially faster than their "
-        "classical counterparts. Potential applications include drug discovery, materials "
-        "science, cryptography, and optimisation problems in logistics and supply chain "
-        "management.",
+        "to avoiding the most catastrophic impacts.",
         130, 30, 4,
     ],
 ]
@@ -146,7 +142,6 @@ with gr.Blocks(
     gr.Markdown(
         "---\n"
         "**Model:** `facebook/bart-large-cnn` · "
-        "**Metrics:** ROUGE-1 / ROUGE-2 / ROUGE-L · "
         "**Built with:** 🤗 Transformers + Gradio\n\n"
         "*Developed as part of academic work at Bharath University (Nov–Dec 2023)*"
     )
